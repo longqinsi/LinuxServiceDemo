@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentScheduler;
+﻿using System.Threading;
+using Mono.Unix;
+using Mono.Unix.Native;
 using Topshelf;
 using Topshelf.Logging;
 
@@ -13,12 +10,15 @@ namespace LinxuServiceDemo
     {
         static void Main(string[] args)
         {
-            HostFactory.Run(service => {
-                service.Service<BizService>(biz => {
-                    biz.ConstructUsing(() => new BizService()); // 服务业务类
-                    biz.WhenStarted(b => b.Start()).WhenStopped(b => b.Stop());
+            HostFactory.Run(service =>
+            {
+                service.Service<MyService>(biz =>
+                {
+                    biz.ConstructUsing(() => new MyService());
+                    biz.WhenStarted((b,hc) => b.Start(hc));
+                    biz.WhenStopped(b => b.Stop());
                 });
-                service.UseLinuxIfAvailable();// linux
+                service.UseLinuxIfAvailable();
                 service.UseLog4Net("log4net.config", true);
                 service.RunAsLocalSystem().SetDescription("my first linux service");
                 service.SetDisplayName("MyFirstService");
@@ -28,36 +28,34 @@ namespace LinxuServiceDemo
         }
     }
 
-    public class BizService
+    public class MyService
     {
         LogWriter log = null;
-
-        public BizService()
+        public MyService()
         {
-            log = HostLogger.Get<BizService>();
+            log = HostLogger.Get<MyService>();
         }
 
-        public void Start()
+        public bool Start(HostControl hc)
         {
             log.Debug("MyFirstService is starting.");
+            new Thread(TerminateHandler).Start(hc);
+            return true;
+        }
 
-            Dictionary<string, List<KeyValuePair<string, string>>> featureTagDict = new Dictionary<string, List<KeyValuePair<string, string>>>() { {"leo1",new List<KeyValuePair<string,string>> () {
-                    new KeyValuePair<string,string> ("leo11", "haha"),
-                    new KeyValuePair<string,string> ("leo12", "haha2"),
-                }
-            }, {"leo2",new List<KeyValuePair<string,string>> () {
-                    new KeyValuePair<string,string> ("leo21", "hehe"),
-                    new KeyValuePair<string,string> ("leo22", "hehe2"),
-                }
-            },
+        void TerminateHandler(object obj)
+        {
+            HostControl hc = obj as HostControl;
 
-        };
+            log.Debug("Initializing Handler for SIGINT");
+            UnixSignal signal = new UnixSignal(Signum.SIGINT);
+            if(signal.WaitOne())
+            {
+                log.Debug("Control-C Pressed!");
+            }
+            log.Debug("handler Terminated");
 
-            JobManager.AddJob(() => {
-                log.DebugFormat("myfirstservice is running {0}", DateTime.Now.ToString("yyyyMMddHHmmss"));
-
-            },
-                (s) => s.ToRunEvery(1).Seconds());
+            hc.Stop();
         }
 
         public void Stop()
