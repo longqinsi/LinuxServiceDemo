@@ -3,19 +3,18 @@ Use Supervisord, TopShelf.Linux and Mono.Unix to gracefully stop monoservice on 
 
 The config of supervisord is below (given the username is someuser):
 
-[program:LinuxServiceDemo]
-directory=/home/someuser/demo/app
-;command=mono-service /home/someuser/LinuxServiceDemo/LinuxServiceDemo.exe --no-daemon
-command=/home/someuser/demo/LinuxServiceDemo
-user=someuser
-process_name=%(program_name)s_%(process_num)02d
-priority=1
-numprocs=1
-autostart=true
-autorestart=false
-startretries=10
-exitcodes=0
-stopsignal=INT
-stopwaitsecs=10
-redirect_stderr=true
+[program:LinuxServiceDemo]<br />
+directory=/home/someuser/demo/app<br />
+command=/home/someuser/demo/LinuxServiceDemo<br />
+user=someuser<br />
+process_name=%(program_name)s_%(process_num)02d<br />
+priority=1<br />
+numprocs=1<br />
+autostart=true<br />
+autorestart=false<br />
+startretries=10<br />
+exitcodes=0<br />
+stopsignal=INT<br />
+stopwaitsecs=10<br />
+redirect_stderr=true<br />
 stdout_logfile=/home/someuser/log/LinuxServiceDemo.log
